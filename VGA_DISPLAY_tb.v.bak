@@ -1,0 +1,31 @@
+module VGA_DISPLAY_tb;
+    reg clk;
+    wire hsync;
+    wire vsync;
+    wire [2:0] rgb;
+
+    // 实例化VGA驱动器
+    vga_driver uut (
+        .clk(clk),
+        .hsync(hsync),
+        .vsync(vsync),
+        .rgb(rgb)
+    );
+
+    // 生成25.175 MHz时钟信号
+    initial begin
+        clk = 0;
+        forever #19.84 clk = ~clk;  // 25.175 MHz时钟周期约为39.68 ns
+    end
+
+    // 监视信号
+    initial begin
+        $monitor("Time=%0d, hsync=%b, vsync=%b, rgb=%b", $time, hsync, vsync, rgb);
+    end
+
+    // 运行仿真
+    initial begin
+        #1000000;  // 运行足够长的时间以观察输出
+        $finish;
+    end
+endmodule

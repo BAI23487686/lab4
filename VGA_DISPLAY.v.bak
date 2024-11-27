@@ -1,0 +1,87 @@
+module vga_display (
+    input wire clk,  // 25.175 MHz时钟
+    output wire hsync,
+    output wire vsync,
+    output wire [2:0] rgb
+);
+    // VGA时序参数
+    parameter H_VISIBLE = 640;
+    parameter H_FRONT_PORCH = 16;
+    parameter H_SYNC_PULSE = 96;
+    parameter H_BACK_PORCH = 48;
+    parameter H_TOTAL = 800;
+    parameter V_VISIBLE = 480;
+    parameter V_FRONT_PORCH = 10;
+    parameter V_SYNC_PULSE = 2;
+    parameter V_BACK_PORCH = 33;
+    parameter V_TOTAL = 525;
+
+    reg [9:0] h_count = 0;
+    reg [9:0] v_count = 0;
+
+    // 字符ROM，8x16像素，每个字符占用16字节
+    reg [7:0] char_rom [0:127];
+    initial begin
+        // 字符“M”的位图
+        char_rom[0] = 8'b11101110;
+        char_rom[1] = 8'b11111110;
+        char_rom[2] = 8'b11111110;
+        char_rom[3] = 8'b11101110;
+        char_rom[4] = 8'b11001110;
+        char_rom[5] = 8'b11001110;
+        char_rom[6] = 8'b11001110;
+        char_rom[7] = 8'b11001110;
+        // 字符“U”的位图
+        char_rom[8] = 8'b11001110;
+        char_rom[9] = 8'b11001110;
+        char_rom[10] = 8'b11001110;
+        char_rom[11] = 8'b11001110;
+        char_rom[12] = 8'b11001110;
+        char_rom[13] = 8'b11001110;
+        char_rom[14] = 8'b11111110;
+        char_rom[15] = 8'b01111100;
+        // 字符“S”的位图
+        char_rom[16] = 8'b01111100;
+        char_rom[17] = 8'b11111110;
+        char_rom[18] = 8'b11000000;
+        char_rom[19] = 8'b11111100;
+        char_rom[20] = 8'b01111110;
+        char_rom[21] = 8'b00001110;
+        char_rom[22] = 8'b11111110;
+        char_rom[23] = 8'b01111100;
+        // 字符“T”的位图
+        char_rom[24] = 8'b11111110;
+        char_rom[25] = 8'b11111110;
+        char_rom[26] = 8'b00110000;
+        char_rom[27] = 8'b00110000;
+        char_rom[28] = 8'b00110000;
+        char_rom[29] = 8'b00110000;
+        char_rom[30] = 8'b00110000;
+        char_rom[31] = 8'b00110000;
+    end
+
+    // 水平同步
+    assign hsync = (h_count >= (H_VISIBLE + H_FRONT_PORCH)) && (h_count < (H_VISIBLE + H_FRONT_PORCH + H_SYNC_PULSE));
+    // 垂直同步
+    assign vsync = (v_count >= (V_VISIBLE + V_FRONT_PORCH)) && (v_count < (V_VISIBLE + V_FRONT_PORCH + V_SYNC_PULSE));
+
+    // RGB输出
+    wire [7:0] char_line;
+    assign char_line = char_rom[(v_count[3:0] * 4) + (h_count[9:7])];
+
+    assign rgb = (h_count < H_VISIBLE && v_count < V_VISIBLE && char_line[h_count[6:4]]) ? 3'b111 : 3'b000;
+
+    // 计数器
+    always @(posedge clk) begin
+        if (h_count == H_TOTAL - 1) begin
+            h_count <= 0;
+            if (v_count == V_TOTAL - 1) begin
+                v_count <= 0;
+            end else begin
+                v_count <= v_count + 1;
+            end
+        end else begin
+            h_count <= h_count + 1;
+        end
+    end
+endmodule
